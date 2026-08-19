@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    :root {
+      --primary: #FF6B35; --primary-hover: #E85A26; --secondary: #1F2937; --bg: #F3F4F6; --surface: rgba(255, 255, 255, 0.95);
+      --success: #10B981; --danger: #EF4444; --ai: #8B5CF6; --text: #374151; --text-light: #9CA3AF;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08); --glass: rgba(255,255,255,0.85);
+    }
+
+    body { font-family: 'Outfit', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); margin: 0; padding: 0; color: var(--text); overflow-x: hidden; min-height: 100vh; user-select: none; -webkit-user-select: none; }
+    
+    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; animation: fadeIn 0.5s forwards; }
+    .login-box { background: var(--surface); padding: 40px 30px; border-radius: 24px; box-shadow: var(--shadow); width: 85%; max-width: 350px; text-align: center; }
+    .login-logo { max-width: 150px; border-radius: 15px; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #btnFullScreenRestore { display: none; position: fixed; bottom: 100px; right: 20px; background: var(--secondary); color: white; border-radius: 50%; width: 55px; height: 55px; justify-content: center; align-items: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 9999; cursor: pointer; font-size: 20px;}
+
+    #appScreen { display: none; padding-bottom: 110px; }
+    .header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header img { max-width: 90px; border-radius: 8px; }
+    .user-badge { background: var(--surface); padding: 8px 15px; border-radius: 20px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); cursor: pointer; display:flex; align-items:center; gap:8px; transition: 0.2s;}
+    .user-badge:active { transform: scale(0.95); }
+    
+    .nav-bottom { position: fixed; bottom: 0; width: 100%; background: var(--glass); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 15px 0 25px; box-shadow: 0 -5px 25px rgba(0,0,0,0.05); z-index: 100; border-top-left-radius: 30px; border-top-right-radius: 30px; }
+    .nav-item { flex: 1; text-align: center; color: var(--text-light); font-size: 11px; cursor: pointer; transition: 0.3s; }
+    .nav-item i { display: block; font-size: 24px; margin-bottom: 5px; }
+    .nav-item.active { color: var(--primary); font-weight: 700; }
+    .nav-item.active i { transform: translateY(-5px) scale(1.15); }
+
+    .container { padding: 0 20px; max-width: 700px; margin: auto; }
+    .seccion { display: none; opacity: 0; }
+    .activa { display: block; animation: slideUpFade 0.5s forwards; }
+    @keyframes slideUpFade { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .card { background: var(--surface); padding: 25px; border-radius: 20px; box-shadow: var(--shadow); margin-bottom: 25px; position: relative; overflow: hidden; }
+    h3 { margin: 0 0 20px 0; font-size: 18px; color: var(--secondary); display: flex; align-items: center; gap: 12px; }
+    h3 i { color: white; background: var(--primary); padding: 10px; border-radius: 12px; }
+
+    label { font-size: 12px; font-weight: 700; color: var(--text-light); display: block; margin: 15px 0 5px; text-transform: uppercase;}
+    select, input { width: 100%; padding: 15px; border-radius: 14px; border: 2px solid transparent; background: #F3F4F6; font-size: 16px; font-family: 'Outfit', sans-serif; font-weight: 500; box-sizing: border-box; }
+    select:focus, input:focus { outline: none; background: #FFF; border-color: var(--primary); }
+
+    .btn-main { width: 100%; padding: 18px; border-radius: 16px; font-size: 17px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: white; margin-top: 20px; transition: 0.2s; position: relative; overflow: hidden;}
+    .btn-main:active { transform: scale(0.96); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); }
+    .btn-success { background: linear-gradient(135deg, #10B981, #059669); }
+    .btn-danger { background: linear-gradient(135deg, #EF4444, #B91C1C); }
+
+    .total-display { font-size: 45px; font-weight: 800; color: var(--success); text-align: center; margin: 20px 0; }
+
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+    .kpi-card { background: linear-gradient(135deg, #ffffff, #f9fafb); padding: 20px; border-radius: 18px; box-shadow: var(--shadow); position: relative; overflow: hidden; border: 1px solid #f0f0f0; }
+    .kpi-card h4 { margin: 0; font-size: 11px; color: var(--text-light); text-transform: uppercase; }
+    .kpi-card h2 { margin: 5px 0 0; font-size: 22px; color: var(--secondary); font-weight: 800;}
+    
+    .progress-container { background: #E5E7EB; border-radius: 20px; height: 20px; width: 100%; margin-top: 10px; overflow: hidden; position: relative;}
+    .progress-bar { background: linear-gradient(90deg, #10B981, #059669); height: 100%; width: 0%; transition: width 1s ease-in-out; }
+    .progress-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; font-size: 12px; font-weight: bold; color: var(--secondary); line-height: 20px; text-shadow: 0 0 3px white;}
+
+    .weather-card { background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3); margin-bottom: 25px; display: flex; align-items: center; gap: 20px;}
+    .weather-card i { font-size: 45px; color: #FBBF24; animation: float 3s ease-in-out infinite;}
+    .weather-info h2 { margin: 0; font-size: 30px; font-weight: 800; }
+    .weather-info p { margin: 0; font-size: 14px; opacity: 0.9; }
+
+    .chart-container { position: relative; height: 220px; width: 100%; margin-top: 15px; }
+    .data-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 8px; border-radius: 12px;}
+    .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 8px; border-radius: 8px; transition: 0.2s; }
+    .action-btn.edit { color: #3B82F6; background: rgba(59, 130, 246, 0.1); }
+    .action-btn.del { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--secondary); color: white; padding: 15px 25px; border-radius: 20px; font-weight: 600; font-size: 15px; z-index: 3000; display: flex; align-items: center; gap: 10px; transition: 0.5s;}
+    .toast.show { top: 30px; }
+
+    .ai-inline-card { background: linear-gradient(180deg, #1e1040 0%, #0d061c 100%); color: white; border: 2px solid #5b21b6; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); margin-bottom: 25px; }
+    .ai-inline-card h3 { color: white; border: none; margin-bottom: 15px; }
+    .ai-inline-card h3 i { background: transparent; padding: 0; color: #A78BFA; font-size: 24px; }
+    .ai-typing { font-size: 14.5px; line-height: 1.6; color: #E5E7EB; white-space: pre-wrap; font-family: monospace; }
+    
+    .input-group { display: flex; align-items: center; background: #F3F4F6; border-radius: 14px; margin-bottom: 10px; overflow: hidden;}
+    .input-group i { padding: 15px; color: var(--secondary); font-size: 20px; background: #e5e7eb;}
+    .input-group input { border-radius: 0; margin: 0; flex: 1; font-weight: bold; color: var(--primary);}
+
+    /* TABLA PROFESIONAL PARA CIERRES */
+    .table-cierres { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+    .table-cierres th { background: var(--secondary); color: white; padding: 12px; text-transform: uppercase; font-size: 11px; text-align:center;}
+    .table-cierres td { padding: 12px; border-bottom: 1px solid #eee; text-align:center; vertical-align: middle;}
+    .table-cierres tr:hover { background: #f9fafb; }
+  </style>
+</head>
+<body>
+
+<!-- BOTÓN MANUAL POR SI SE SALE DE PANTALLA COMPLETA -->
+<div id="btnFullScreenRestore" onclick="entrarPantallaCompleta()"><i class="fa-solid fa-expand"></i></div>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <img src="https://i.postimg.cc/W4Y09TTh/IMG-20260809-WA0061.jpg" class="login-logo" alt="Logo">
+    <h2 style="margin: 0 0 5px; color: var(--secondary);">¡Hola de nuevo!</h2>
+    <input type="text" id="logUser" placeholder="Usuario" style="margin: 20px 0 10px;" onkeydown="if(event.key === 'Enter') hacerLogin()">
+    <input type="password" id="logPass" placeholder="Contraseña" onkeydown="if(event.key === 'Enter') hacerLogin()">
+    <button class="btn-main btn-primary" id="btnLogin" onclick="hacerLogin()">
+      <i class="fa-solid fa-right-to-bracket"></i> INGRESAR
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toastMsg"><i class="fa-solid fa-bell"></i> <span id="toastText"></span></div>
+
+<!-- MODAL EDICIÓN CIERRES -->
+<div id="modalEditCierre" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; justify-content:center; align-items:center;">
+  <div style="background:var(--surface); padding:25px; border-radius:20px; width:90%; max-width:350px;">
+    <h3 style="margin-top:0"><i class="fa-solid fa-pen"></i> Editar Cierre</h3>
+    <p style="font-size:13px; color:gray; margin-top:-10px;">Corregí los montos si contaste mal la plata de ese día.</p>
+    <input type="hidden" id="editCierreId">
+    <label>Efectivo Físico ($)</label><input type="number" id="editCierreEfe">
+    <label>Tarjeta / Posnet ($)</label><input type="number" id="editCierreTar">
+    <label>Virtual / QR ($)</label><input type="number" id="editCierreQR">
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-main" style="background:gray; margin:0;" onclick="document.getElementById('modalEditCierre').style.display='none'">Cancelar</button>
+      <button class="btn-main btn-success" style="margin:0;" onclick="guardarEdicionCierre()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP COMPLETA -->
+<div id="appScreen">
+  <div class="header">
+    <img src="https://i.postimg.cc/W4Y09TTh/IMG-20260809-WA0061.jpg" alt="Logo">
+    <div class="user-badge" onclick="cerrarSesion()">
+      <i class="fa-solid fa-circle-user" style="color: var(--primary); font-size: 20px;"></i>
+      <span id="lblUsuario">User</span>
+      <i class="fa-solid fa-right-from-bracket" style="color: var(--danger); font-size: 14px;"></i>
+    </div>
+  </div>
+
+  <div class="container">
+    
+    <!-- 🛒 CIERRE DIARIO Y WSP -->
+    <div id="caja" class="seccion activa">
+      <div class="card">
+        <h3><i class="fa-solid fa-cash-register"></i> Cierre de Caja Diario</h3>
+        <p style="font-size:14px; color:var(--text-light); margin-top:0;">Al final del turno, indicá cuánta plata cobraste por cada medio de pago.</p>
+
+        <label>Efectivo Físico Cobrado ($)</label>
+        <div class="input-group">
+          <i class="fa-solid fa-money-bill-wave"></i>
+          <input type="number" id="cierreEfectivo" placeholder="0" oninput="calcularTotalCierre()">
+        </div>
+
+        <label>Tarjeta / Posnet ($)</label>
+        <div class="input-group">
+          <i class="fa-solid fa-credit-card"></i>
+          <input type="number" id="cierreTarjeta" placeholder="0" oninput="calcularTotalCierre()">
+        </div>
+
+        <label>Virtual / QR (MercadoPago) ($)</label>
+        <div class="input-group">
+          <i class="fa-solid fa-qrcode"></i>
+          <input type="number" id="cierreQR" placeholder="0" oninput="calcularTotalCierre()">
+        </div>
+        
+        <label style="text-align:center; margin-top:20px;">TOTAL INGRESOS DEL DÍA</label>
+        <div class="total-display" id="totalCierre">$0</div>
+        
+        <!-- BOTÓN UNIFICADO MAESTRO -->
+        <button class="btn-main btn-success" id="btnGuardarCierre" onclick="procesarCierreYWhatsApp()">
+          <i class="fa-solid fa-check-double"></i> GUARDAR CIERRE Y ENVIAR WSP
+        </button>
+      </div>
+    </div>
+
+    <!-- 💸 EGRESOS / RETIROS -->
+    <div id="movimientos" class="seccion">
+      <div class="card">
+        <h3><i class="fa-solid fa-wallet"></i> Salida de Caja / Retiros</h3>
+        <label>Motivo</label>
+        <select id="movTipo" onchange="toggleEmpleado()">
+          <option value="Adelanto">👥 Adelanto / Retiro Personal</option>
+          <option value="A_Cuenta">🍩 Compra a Cuenta (Debe Plata)</option>
+          <option value="Gasto">🛒 Pago de Proveedor / Gastos</option>
+        </select>
+        
+        <div id="divEmpleado"><label>Personal</label><select id="movEmp"></select></div>
+        <label>Monto</label><input type="number" id="movMonto" placeholder="$">
+        <label>Medio / Fondo</label>
+        <select id="movMedio">
+          <option value="Efectivo">Efectivo Caja (Resta de la caja)</option>
+          <option value="Virtual">Virtual / Banco</option>
+          <option value="A Cuenta">Anotación a Cuenta (No resta efectivo)</option>
+        </select>
+        <label>Detalle</label><input type="text" id="movObs" placeholder="Ej: Retiro para panadería">
+        <button class="btn-main btn-primary" id="btnGasto" onclick="guardarMovimiento()">REGISTRAR OPERACIÓN</button>
+        
+        <!-- HISTORIAL DE OPERACIONES -->
+        <button class="btn-main" style="background:var(--secondary); margin-top:25px;" onclick="cargarHistorialMovimientos()" id="btnVerHistorial">
+          <i class="fa-solid fa-list-check"></i> VER REGISTROS DE OPERACIONES
+        </button>
+        <div id="listaHistorialMovimientos" style="margin-top:15px; display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 🗂️ HISTORIAL DE CIERRES DIARIOS (NUEVA SOLAPA) -->
+    <div id="cierres" class="seccion">
+      <div class="card">
+        <h3><i class="fa-solid fa-table"></i> Historial de Cierres Diarios</h3>
+        <p style="font-size:13px; color:var(--text-light); margin-top:0;">Revisá y editá los cierres de días anteriores.</p>
+        <div id="listaCierres" style="margin-top:15px;">
+          <!-- Tabla renderizada por JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 📊 STATS E IA -->
+    <div id="stats" class="seccion">
+      <div class="weather-card">
+        <i class="fa-solid fa-cloud-sun" id="wIcon"></i>
+        <div class="weather-info">
+          <h2 id="wTemp">--°C</h2>
+          <p id="wDesc">Pronóstico Ezeiza...</p>
+        </div>
+      </div>
+
+      <div class="ai-inline-card nav-admin">
+        <h3><i class="fa-solid fa-robot" style="animation: pulseRed 2s infinite;"></i> Asesor Financiero IA</h3>
+        <div class="ai-typing" id="aiTextInline">Presioná "Actualizar Gráficos" para ver el informe...</div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-chart-line"></i> Dashboard Financiero</h3>
+        
+        <label style="text-align:center; color:var(--secondary); font-size:14px; margin-top:0">Meta de Facturación del Mes: <strong id="lblMetaObj">$0</strong></label>
+        <div class="progress-container">
+          <div class="progress-bar" id="barraMeta"></div>
+          <div class="progress-text" id="txtMeta">0%</div>
+        </div>
+        <hr style="border:1px dashed #eee; margin:20px 0;">
+
+        <div class="kpi-grid">
+          <div class="kpi-card" style="border-color: var(--success);"><h4>Ingresos Hoy</h4><h2 id="stHoy" style="color:var(--success)">$0</h2></div>
+          <div class="kpi-card"><h4>Efectivo Hoy</h4><h2 id="stEfectivo">$0</h2></div>
+          <div class="kpi-card"><h4>Gastos Hoy</h4><h2 id="stGastos" style="color:var(--danger)">$0</h2></div>
+          <div class="kpi-card"><h4>Neto en Caja</h4><h2 id="stCajaFisica">$0</h2></div>
+          <div class="kpi-card" style="grid-column: span 2; background:#f3f4f6; text-align:center;"><h4>Facturación Mes Acumulada</h4><h2 id="stMes">$0</h2></div>
+        </div>
+
+        <label style="text-align:center; margin-top:10px;">Evolución de Ingresos ($)</label>
+        <div class="chart-container"><canvas id="chartLine"></canvas></div>
+
+        <label style="text-align:center; margin-top:30px;">Distribución por Medio de Pago</label>
+        <div class="chart-container" style="height: 250px;"><canvas id="chartPie"></canvas></div>
+
+        <button class="btn-main" style="background: var(--secondary); margin-top:25px;" onclick="cargarEstadisticas(true)"><i class="fa-solid fa-rotate"></i> Actualizar Gráficos e IA</button>
+      </div>
+    </div>
+
+    <!-- ⚙️ ADMIN -->
+    <div id="admin" class="seccion">
+      <div class="card">
+        <h3><i class="fa-solid fa-users"></i> Gestión de Personal</h3>
+        <p style="font-size:13px; color:var(--text-light); margin-top:0">Aparecen en la solapa de retiros y compras a cuenta.</p>
+        <input type="hidden" id="empEditId">
+        <label>Nombre del Empleado</label><input type="text" id="adminEmpName" placeholder="Ej: Tamara">
+        <button class="btn-main btn-success" id="btnSaveEmp" onclick="guardarEmpCRUD()">Guardar Empleado</button>
+        <label style="margin-top: 25px;">Lista de Personal</label>
+        <div id="listaEmpleados" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-users-gear"></i> Accesos y Usuarios del Sistema</h3>
+        <input type="hidden" id="usrId">
+        <label>Usuario (Login)</label><input type="text" id="usrName" placeholder="Nombre">
+        <label>Contraseña</label><input type="text" id="usrPass" placeholder="Contraseña">
+        <label>Rol</label>
+        <select id="usrRol"><option value="Empleado">Empleado</option><option value="Administrador">Administrador Total</option></select>
+        <button class="btn-main btn-primary" id="btnSaveUsr" onclick="guardarUsr()">Guardar Usuario</button>
+        <label style="margin-top: 25px;">Usuarios Autorizados</label>
+        <div id="listaUsuarios" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nav-bottom">
+    <div class="nav-item active" onclick="nav('caja', this)"><i class="fa-solid fa-cash-register"></i>Ingresos</div>
+    <div class="nav-item" onclick="nav('movimientos', this)"><i class="fa-solid fa-wallet"></i>Retiros</div>
+    <div class="nav-item nav-admin" onclick="nav('cierres', this); cargarHistorialCierres();"><i class="fa-solid fa-table"></i>Cierres</div>
+    <div class="nav-item nav-admin" onclick="nav('stats', this); cargarEstadisticas(false);"><i class="fa-solid fa-chart-pie"></i>Stats/IA</div>
+    <div class="nav-item nav-admin" onclick="nav('admin', this)"><i class="fa-solid fa-gear"></i>Admin</div>
+  </div>
+</div>
+
+<script>
+  let usrActual = ""; let rolActual = ""; 
+  let chartL = null; let chartP = null;
+  let DB_Usuarios = []; let DB_Empleados = [];
+  let reporteIACargado = false; 
+  const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+
+  function entrarPantallaCompleta() {
+    let elem = document.documentElement;
+    if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
+  }
+
+  function nav(id, el) {
+    document.querySelectorAll('.seccion').forEach(function(s){ s.classList.remove('activa'); });
+    document.getElementById(id).classList.add('activa');
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    if(el) el.classList.add('active');
+  }
+  
+  function mostrarToast(txt) {
+    document.getElementById("toastText").innerText = txt || "Ok"; 
+    document.getElementById("toastMsg").classList.add("show");
+    setTimeout(function() { document.getElementById("toastMsg").classList.remove("show"); }, 3500);
+  }
+  
+  function btnEstado(id, cargando, originalTxt, originalIcon) {
+    var b = document.getElementById(id);
+    if(!b) return;
+    if(cargando){ b.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Procesando...`; b.style.pointerEvents="none"; }
+    else { b.innerHTML = `<i class="fa-solid ${originalIcon}"></i> ${originalTxt}`; b.style.pointerEvents="auto"; }
+  }
+  
+  function toggleEmpleado() { 
+    var t = document.getElementById("movTipo").value;
+    document.getElementById("divEmpleado").style.display = (t === "Adelanto" || t === "A_Cuenta") ? "block" : "none";
+    if(t === "A_Cuenta") document.getElementById("movMedio").value = "A Cuenta"; 
+  }
+
+  function cerrarSesion() {
+    usrActual = ""; rolActual = ""; document.getElementById("logUser").value = ""; document.getElementById("logPass").value = "";
+    if (document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen(); }
+    document.getElementById("appScreen").style.display = "none"; document.getElementById("loginScreen").style.display = "flex";
+    nav('caja', document.querySelector('.nav-item')); reporteIACargado = false; mostrarToast("Sesión cerrada");
+  }
+
+  function hacerLogin() {
+    var u = document.getElementById("logUser").value; var p = document.getElementById("logPass").value;
+    if(!u || !p) return mostrarToast("Completá los datos");
+    
+    // Activa la pantalla completa SOLAMENTE si el usuario toca el botón de ingresar
+    entrarPantallaCompleta(); 
+    
+    document.getElementById("btnLogin").innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+    google.script.run.withSuccessHandler(function(res) {
+      if(res && res.success) {
+        usrActual = res.usuario; rolActual = res.rol; document.getElementById("lblUsuario").innerText = usrActual;
+        document.getElementById("loginScreen").style.display = "none"; document.getElementById("appScreen").style.display = "block";
+        cargarDatosBase();
+        document.querySelectorAll(".nav-admin").forEach(function(e) { e.style.display = (rolActual === "Administrador") ? "block" : "none"; });
+        document.getElementById("btnFullScreenRestore").style.display = "flex"; 
+      } else {
+        mostrarToast(res ? res.error : "Error de conexión"); 
+        document.getElementById("btnLogin").innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> INGRESAR`;
+      }
+    }).verificarLogin(u, p);
+  }
+
+  function cargarDatosBase() {
+    google.script.run.withSuccessHandler(function(d) {
+      if(!d) return;
+      DB_Empleados = d.empleados || [];
+      document.getElementById("movEmp").innerHTML = DB_Empleados.map(function(e){ return `<option value="${e.nombre}">${e.nombre}</option>`; }).join('');
+      renderEmpleados();
+      DB_Usuarios = d.usuarios || []; renderUsuarios(); 
+    }).obtenerDatos();
+  }
+
+  // --- CIERRE DE CAJA DIARIO + WSP AUTOMÁTICO ---
+  function calcularTotalCierre() {
+    var e = parseFloat(document.getElementById("cierreEfectivo").value) || 0;
+    var t = parseFloat(document.getElementById("cierreTarjeta").value) || 0;
+    var q = parseFloat(document.getElementById("cierreQR").value) || 0;
+    document.getElementById("totalCierre").innerText = fmt.format(e + t + q);
+  }
+
+  function procesarCierreYWhatsApp() {
+    var e = document.getElementById("cierreEfectivo").value;
+    var t = document.getElementById("cierreTarjeta").value;
+    var q = document.getElementById("cierreQR").value;
+    
+    if(!e && !t && !q) return mostrarToast("Completá al menos un valor de ingreso.");
+    
+    btnEstado("btnGuardarCierre", true, "", "");
+    
+    google.script.run.withSuccessHandler(function(r) { 
+      
+      // Pedir clima e IA para armar el WhatsApp
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=-34.81&longitude=-58.53&daily=temperature_2m_max,precipitation_sum&timezone=America/Argentina/Buenos_Aires")
+      .then(res => res.json())
+      .then(data => {
+          var d = data.daily;
+          var climaObj = { tempM: Math.round(d.temperature_2m_max[1]), lluviaM: d.precipitation_sum[1], arrLluvias: (d.precipitation_sum[1]>1 || d.precipitation_sum[2]>1), arrCalor: (d.temperature_2m_max[1]>28 && d.temperature_2m_max[2]>28) };
+          armarYEnviarWsp(climaObj);
+      })
+      .catch(err => { armarYEnviarWsp({ tempM: 20, lluviaM: 0, arrLluvias: false, arrCalor: false }); });
+
+    }).registrarCierreDiario(e, t, q, usrActual);
+  }
+
+  function armarYEnviarWsp(climaObj) {
+    google.script.run.withSuccessHandler(function(respuestaTextoSeguro) {
+        try {
+            var s = JSON.parse(respuestaTextoSeguro);
+            var fechaHoy = new Date().toLocaleDateString('es-AR');
+            
+            var mensaje = "🏪 *CIERRE DE CAJA (" + fechaHoy + ")* 🏪\n\n" +
+                          "💵 Efectivo Físico: $" + Math.round(s.eHoy).toLocaleString('es-AR') + "\n" +
+                          "💳 Tarjeta Posnet: $" + Math.round(s.tHoy).toLocaleString('es-AR') + "\n" +
+                          "📱 Virtual / QR: $" + Math.round(s.qHoy).toLocaleString('es-AR') + "\n" +
+                          "----------------------------\n" +
+                          "💰 *Ingresos Totales:* $" + Math.round(s.vHoy).toLocaleString('es-AR') + "\n" +
+                          "💸 *Gastos Efectivo:* $" + Math.round(s.gastosHoy).toLocaleString('es-AR') + "\n\n" +
+                          "🔐 *EFECTIVO NETO EN MANO:* $" + Math.round(s.netoEfectivo).toLocaleString('es-AR') + "\n\n" +
+                          "Enviado por: " + (usrActual || "Admin") + "\n\n" +
+                          "====================\n" +
+                          s.reporteIA;
+
+            var phone = "5491158035009";
+            var apikey = "6949355";
+            var url = "https://api.callmebot.com/whatsapp.php?phone=" + phone + "&text=" + encodeURIComponent(mensaje) + "&apikey=" + apikey;
+
+            // Enviamos desde el navegador (sin límites de Google)
+            fetch(url, {mode: 'no-cors'}).then(function() {
+                mostrarToast("¡Cierre guardado y WSP enviado! 📲");
+                finalizarCierreUI();
+            }).catch(function() {
+                mostrarToast("Guardado Ok. Error de red al enviar WSP.");
+                finalizarCierreUI();
+            });
+
+        } catch(e) {
+            mostrarToast("Cierre guardado. Error al armar el reporte IA.");
+            finalizarCierreUI();
+        }
+    }).obtenerEstadisticas(climaObj);
+  }
+
+  function finalizarCierreUI() {
+    document.getElementById("cierreEfectivo").value = ""; 
+    document.getElementById("cierreTarjeta").value = ""; 
+    document.getElementById("cierreQR").value = ""; 
+    calcularTotalCierre();
+    btnEstado("btnGuardarCierre", false, "GUARDAR CIERRE Y ENVIAR WSP", "fa-check-double");
+    cargarEstadisticas(true); 
+    cargarHistorialCierres();
+  }
+
+  // --- HISTORIAL DE CIERRES DIARIOS (NUEVA PESTAÑA / CUADRO) ---
+  function cargarHistorialCierres() {
+    var div = document.getElementById("listaCierres");
+    div.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>`;
+    
+    google.script.run.withSuccessHandler(function(resStr) {
+       var list = JSON.parse(resStr);
+       if(list.length === 0) {
+           div.innerHTML = "<p style='text-align:center; color:gray'>No hay cierres previos.</p>"; return;
+       }
+       var html = `<div style="overflow-x:auto;"><table class="table-cierres">
+                      <thead><tr><th>Fecha</th><th>Efectivo</th><th>Tarjeta</th><th>QR</th><th>Total</th><th>Acción</th></tr></thead><tbody>`;
+       list.forEach(function(item) {
+           html += `<tr>
+                      <td><strong>${item.fecha}</strong><br><span style="font-size:10px; color:gray">${item.usr}</span></td>
+                      <td>$${fmt.format(item.efectivo).replace('$','')}</td>
+                      <td>$${fmt.format(item.tarjeta).replace('$','')}</td>
+                      <td>$${fmt.format(item.qr).replace('$','')}</td>
+                      <td style="font-weight:bold; color:var(--success)">$${fmt.format(item.total).replace('$','')}</td>
+                      <td><button class="action-btn edit" onclick="editarCierreUI('${item.id}', ${item.efectivo}, ${item.tarjeta}, ${item.qr})"><i class="fa-solid fa-pen"></i></button></td>
+                    </tr>`;
+       });
+       html += `</tbody></table></div>`;
+       div.innerHTML = html;
+    }).obtenerHistorialCierres();
+  }
+
+  function editarCierreUI(id, e, t, q) {
+    document.getElementById('editCierreId').value = id;
+    document.getElementById('editCierreEfe').value = e;
+    document.getElementById('editCierreTar').value = t;
+    document.getElementById('editCierreQR').value = q;
+    document.getElementById('modalEditCierre').style.display = 'flex';
+  }
+
+  function guardarEdicionCierre() {
+    var id = document.getElementById('editCierreId').value;
+    var e = document.getElementById('editCierreEfe').value;
+    var t = document.getElementById('editCierreTar').value;
+    var q = document.getElementById('editCierreQR').value;
+    
+    document.getElementById('modalEditCierre').style.display = 'none';
+    mostrarToast("Guardando edición...");
+    
+    google.script.run.withSuccessHandler(function(r) {
+      mostrarToast(r);
+      cargarHistorialCierres(); // Refresca la tabla
+      cargarEstadisticas(true); // Actualiza los gráficos
+    }).editarCierreDiario(id, e, t, q);
+  }
+
+  // --- HISTORIAL DE OPERACIONES (RETIROS) ---
+  function cargarHistorialMovimientos() {
+    btnEstado("btnVerHistorial", true, "", "");
+    google.script.run.withSuccessHandler(function(resStr){
+       btnEstado("btnVerHistorial", false, "VER REGISTROS DE OPERACIONES", "fa-list-check");
+       var list = JSON.parse(resStr);
+       var div = document.getElementById("listaHistorialMovimientos");
+       div.style.display = "block";
+       if(list.length === 0) {
+           div.innerHTML = "<p style='text-align:center; color:gray'>No hay operaciones previas.</p>"; return;
+       }
+       var html = "";
+       list.forEach(function(item) {
+           var colorMonto = item.tipo === "Adelanto" ? "color:#EAB308" : (item.tipo === "Gasto" ? "color:#EF4444" : "color:#3B82F6");
+           html += `<div class="data-row">
+                      <div>
+                        <strong>${item.persona}</strong> <span style="font-size:11px; color:gray">(${item.tipo.replace('_',' ')})</span><br>
+                        <span style="font-size:12px; color:var(--text-light)">${item.fecha} | M: ${item.medio}</span>
+                        <div style="font-size:11px; color:gray; font-style:italic">${item.obs}</div>
+                      </div>
+                      <div style="font-weight:bold; font-size:18px; ${colorMonto}">$${fmt.format(item.monto).replace('$','')}</div>
+                    </div>`;
+       });
+       div.innerHTML = html;
+    }).obtenerHistorialMovimientos();
+  }
+
+  function guardarMovimiento() {
+    var t = document.getElementById("movTipo").value, p = (t==="Adelanto" || t==="A_Cuenta") ? document.getElementById("movEmp").value : "Gasto", m = document.getElementById("movMonto").value, med = document.getElementById("movMedio").value, o = document.getElementById("movObs").value;
+    if(!m) return mostrarToast("Falta monto");
+    btnEstado("btnGasto", true, "", "");
+    google.script.run.withSuccessHandler(function(r) { 
+      mostrarToast(r); document.getElementById("movMonto").value = ""; document.getElementById("movObs").value = ""; 
+      btnEstado("btnGasto", false, "REGISTRAR OPERACIÓN", ""); 
+      cargarHistorialMovimientos(); 
+    }).registrarMovimiento(t, p, m, med, o, usrActual);
+  }
+
+  // --- CRUD EMPLEADOS ---
+  function renderEmpleados() {
+    let html = "";
+    DB_Empleados.forEach(function(e, i) {
+      html += `<div class="data-row list-item" style="animation-delay: ${i*0.1}s">
+                 <div><strong>${e.nombre}</strong></div>
+                 <div><button class="action-btn edit" onclick="editarEmpUI('${e.id}', '${e.nombre}')"><i class="fa-solid fa-pen"></i></button>
+                 <button class="action-btn del" onclick="borrarEmp('${e.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;
+    }); document.getElementById("listaEmpleados").innerHTML = html;
+  }
+  function editarEmpUI(id, n) { document.getElementById("empEditId").value = id; document.getElementById("adminEmpName").value = n; }
+  function guardarEmpCRUD() {
+    var id = document.getElementById("empEditId").value, n = document.getElementById("adminEmpName").value;
+    if(!n) return mostrarToast("Completá el nombre del empleado");
+    btnEstado("btnSaveEmp", true, "", "");
+    google.script.run.withSuccessHandler(function(res){
+      mostrarToast(res); document.getElementById("empEditId").value=""; document.getElementById("adminEmpName").value=""; 
+      btnEstado("btnSaveEmp", false, "Guardar Empleado", ""); cargarDatosBase();
+    }).guardarEmpleado(id, n);
+  }
+  function borrarEmp(id) { if(confirm("¿Borrar empleado?")) google.script.run.withSuccessHandler(function(res){ mostrarToast(res); cargarDatosBase(); }).eliminarEmpleado(id); }
+
+  // --- CRUD USUARIOS ---
+  function renderUsuarios() {
+    let html = "";
+    DB_Usuarios.forEach(function(u, i) {
+      html += `<div class="data-row list-item" style="animation-delay: ${i*0.1}s">
+                 <div><strong>${u.usuario}</strong> <span style="font-size:10px; color:gray">(${u.rol})</span></div>
+                 <div><button class="action-btn edit" onclick="editarUsrUI('${u.id}', '${u.usuario}', '${u.rol}')"><i class="fa-solid fa-pen"></i></button>
+                 <button class="action-btn del" onclick="borrarUsr('${u.id}')"><i class="fa-solid fa-trash"></i></button></div></div>`;
+    }); document.getElementById("listaUsuarios").innerHTML = html;
+  }
+  function editarUsrUI(id, u, r) { document.getElementById("usrId").value = id; document.getElementById("usrName").value = u; document.getElementById("usrRol").value = r; }
+  function guardarUsr() {
+    var id = document.getElementById("usrId").value, u = document.getElementById("usrName").value, p = document.getElementById("usrPass").value, r = document.getElementById("usrRol").value;
+    if(!u) return mostrarToast("Falta nombre"); if(!id && !p) return mostrarToast("Ingresá contraseña");
+    btnEstado("btnSaveUsr", true, "", "");
+    google.script.run.withSuccessHandler(function(res){ mostrarToast(res); document.getElementById("usrId").value=""; document.getElementById("usrName").value=""; document.getElementById("usrPass").value=""; btnEstado("btnSaveUsr", false, "Guardar Usuario", ""); cargarDatosBase(); }).guardarUsuario(id, u, p, r);
+  }
+  function borrarUsr(id) { if(confirm("¿Borrar usuario?")) google.script.run.withSuccessHandler(function(res){ mostrarToast(res); cargarDatosBase(); }).eliminarUsuario(id); }
+
+  function safeSetText(id, text) { var el = document.getElementById(id); if(el) el.innerText = text; }
+
+  // --- IA Y ESTADISTICAS SEGURAS ---
+  function cargarEstadisticas(fuerzaRefresh) {
+    if(!fuerzaRefresh && reporteIACargado) return;
+    
+    var aiText = document.getElementById("aiTextInline");
+    if(aiText) aiText.innerText = "Conectando al servidor y procesando estado financiero...";
+
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=-34.81&longitude=-58.53&daily=temperature_2m_max,precipitation_sum&timezone=America/Argentina/Buenos_Aires")
+    .then(res => res.json())
+    .then(data => {
+        var d = data.daily;
+        var tM = Math.round(d.temperature_2m_max[1]);
+        var pM = d.precipitation_sum[1];
+        var icon = (pM > 1) ? "fa-cloud-showers-heavy" : (tM < 15 ? "fa-snowflake" : (tM > 28 ? "fa-sun" : "fa-cloud-sun"));
+        var arrLluvias = (d.precipitation_sum[1]>1 || d.precipitation_sum[2]>1 || d.precipitation_sum[3]>1);
+        var arrCalor = (d.temperature_2m_max[1]>28 && d.temperature_2m_max[2]>28);
+
+        var climaObj = { tempM: tM, lluviaM: pM, icon: icon, arrLluvias: arrLluvias, arrCalor: arrCalor };
+        pedirStatsBackend(climaObj);
+    })
+    .catch(err => {
+        pedirStatsBackend({ tempM: 20, lluviaM: 0, icon: "fa-cloud-sun", arrLluvias: false, arrCalor: false });
+    });
+  }
+
+  function pedirStatsBackend(climaObj) {
+    var aiText = document.getElementById("aiTextInline");
+    google.script.run
+      .withSuccessHandler(function(respuestaTextoSeguro) {
+        try {
+          var s = JSON.parse(respuestaTextoSeguro);
+          if(s.error) { if(aiText) aiText.innerHTML = "<span style='color:#EF4444'>" + s.reporteIA + "</span>"; return; }
+
+          safeSetText("stHoy", fmt.format(s.vHoy || 0)); 
+          safeSetText("stEfectivo", fmt.format(s.eHoy || 0));
+          safeSetText("stGastos", fmt.format(s.gastosHoy || 0));
+          safeSetText("stCajaFisica", fmt.format(s.netoEfectivo || 0));
+          safeSetText("stMes", fmt.format(s.ventasMes || 0));
+          
+          safeSetText("lblMetaObj", fmt.format(s.metaMensual || 0));
+          var elBar = document.getElementById("barraMeta");
+          if(elBar) elBar.style.width = (s.metaPct || 0) + "%";
+          safeSetText("txtMeta", (s.metaPct || 0) + "% alcanzado");
+
+          if(climaObj) {
+            var wIcon = document.getElementById("wIcon");
+            if(wIcon) wIcon.className = "fa-solid " + (climaObj.icon || "fa-cloud-sun");
+            safeSetText("wTemp", (climaObj.tempM !== "--" ? climaObj.tempM + "°C" : "--°C"));
+            var desc = (climaObj.lluviaM > 1) ? "Lluvias pronosticadas" : (climaObj.tempM > 28 ? "Día Caluroso" : "Clima Agradable");
+            safeSetText("wDesc", "Ezeiza Mañana: " + desc);
+          }
+          
+          try {
+            if(chartL) chartL.destroy(); 
+            var ctxL = document.getElementById('chartLine');
+            if(ctxL) {
+              chartL = new Chart(ctxL.getContext('2d'), { 
+                type: 'line', 
+                data: { labels: s.histDias, datasets: [{ label: 'Ingresos ($)', data: s.histMontos, borderColor: '#FF6B35', backgroundColor: 'rgba(255, 107, 53, 0.1)', fill: true, tension: 0.4 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } 
+              });
+            }
+          } catch(err1) {}
+
+          try {
+            if(chartP) chartP.destroy();
+            var ctxP = document.getElementById('chartPie');
+            if(ctxP) {
+              chartP = new Chart(ctxP.getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: s.pagoLabels, datasets: [{ data: s.pagoData, backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+              });
+            }
+          } catch(err2) {}
+
+          if(aiText) {
+            aiText.innerHTML = ""; 
+            efectoEscribirInline(s.reporteIA || "Análisis completado.", 0); 
+          }
+          reporteIACargado = true;
+          
+        } catch(eParse) { if(aiText) aiText.innerHTML = "Error decodificando el análisis: " + eParse.message; }
+      })
+      .withFailureHandler(function(error) { if(aiText) aiText.innerText = "Error grave de conexión: " + error; })
+      .obtenerEstadisticas(climaObj);
+  }
+
+  function efectoEscribirInline(texto, i) {
+    if (i < texto.length) {
+      let char = texto.charAt(i); 
+      var aiText = document.getElementById("aiTextInline");
+      if(aiText) aiText.innerHTML += (char === '\n' ? '<br>' : char);
+      setTimeout(function() { efectoEscribirInline(texto, i + 1); }, 10);
+    }
+  }
+</script>
+</body>
+</html>
